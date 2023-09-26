@@ -128,12 +128,6 @@ class ApmEntityCollector:
         :return: The next cursor, if any.
         """
 
-        try:
-            next_cursor = response["data"]["actor"]["entitySearch"]["results"]["nextCursor"]
-        except KeyError:
-            logging.error("KeyError: 'nextCursor' not found in response.")
-            next_cursor = None
-
         entities = response["data"]["actor"]["entitySearch"]["results"]["entities"]
 
         # Append the entities to the entities list

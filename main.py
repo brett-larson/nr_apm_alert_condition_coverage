@@ -3,6 +3,7 @@ import new_relic.AlertCoverageCollector as AlertCoverageCollector
 import new_relic.NerdGraphClient as NerdGraphClient
 import CsvFileManager as CsvFileManager
 import logging
+import pandas as pd
 
 # Configure logging
 logging.basicConfig(
