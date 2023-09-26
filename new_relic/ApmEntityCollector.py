@@ -125,7 +125,6 @@ class ApmEntityCollector:
         This private function processes the response from the API request. This includes getting the next cursor,
         if any, and appending the entities to the entities list.
         :param response: The JSON response from the API request.
-        :return: The next cursor, if any.
         """
 
         entities = response["data"]["actor"]["entitySearch"]["results"]["entities"]
@@ -137,5 +136,3 @@ class ApmEntityCollector:
                 self.entities.append(entity)
         except KeyError:
             logging.error("KeyError: 'name' not found in entity.")
-
-
