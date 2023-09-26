@@ -15,13 +15,29 @@ logging.basicConfig(
 
 
 def main():
-    nerdgraph = NerdGraphClient.NerdGraphClient()   # Create a NerdGraphClient object
+    """
+    This is the main function.
+    :return: None
+    """
+
+    logging.info("Starting the application.")
+
+    # Create required objects.
+    nerdgraph = NerdGraphClient.NerdGraphClient()  # Create a NerdGraphClient object
     apm_collector = ApmEntityCollector.ApmEntityCollector()  # Create an ApmEntityCollector object
     alert_collector = AlertCoverageCollector.AlertCoverageCollector()  # Create an AlertCoverageCollector object
     csv_manager = CsvFileManager.CsvFileManager("output.csv")  # Create a CsvFileManager object
-    apm_entities = apm_collector.get_entities(nerdgraph) # Get a list of entities
+
+    # Get a list of entities for a given account
+    apm_entities = apm_collector.get_entities(nerdgraph)
+
+    # Get alert coverage data for a given account
     entity_data = alert_collector.get_alert_reporting_data(apm_entities, nerdgraph)
-    csv_manager.write_dicts_to_csv(entity_data)  # Write the list of entities to a CSV file
+
+    # Write the data to a CSV file
+    csv_manager.write_dicts_to_csv(entity_data)
+
+    logging.info("Finished the application.")
 
 
 if __name__ == '__main__':

@@ -1,6 +1,3 @@
-"""
-    This module contains the NerdGraphClient class, which is used to execute GraphQL queries against the New Relic API.
-"""
 import logging
 import os
 from time import sleep
@@ -26,10 +23,10 @@ class ApmEntityCollector:
         :return: The NerdGraph query and variables.
         """
 
-        logging.info("Building query.")
+        logging.debug("Building query.")
 
         if cursor:
-            logging.info("Cursor is not None. Building query with cursor.")
+            logging.debug("Cursor is not None. Building query with cursor.")
 
             # Query variables with a cursor
             query_variables = {
@@ -54,7 +51,7 @@ class ApmEntityCollector:
                 }
                 """
         else:
-            logging.info("Cursor is None. Building query without cursor.")
+            logging.debug("Cursor is None. Building query without cursor.")
 
             # Query variables without a cursor
             query_variables = {
@@ -65,7 +62,7 @@ class ApmEntityCollector:
             graphql_query = """
                 query ($entity_search_query: String!) {
                   actor {
-                    entitySearch(query: $entity_search_query, options: {limit: 10}) {
+                    entitySearch(query: $entity_search_query, options: {limit: 2}) {
                       results {
                         nextCursor
                         entities {
@@ -86,28 +83,42 @@ class ApmEntityCollector:
         :param nerdgraph_client: A NerdGraphClient object.
         :return: A list of dictionaries containing entity names and GUIDs.
         """
-        next_cursor = None
+
+        # next_cursor = None  # Initialize the next cursor to None
 
         query, variables = self._build_queries()  # Get the query and variables
 
-        try:
-            response = nerdgraph_client.send_query(query, variables)
-        except nerdgraph_client.NerdGraphClientError as e:
-            logging.error(f"Failed to send query: {str(e)}")
-        else:
-            next_cursor = self._process_response(response)  # Process the response and get the next cursor.
+        # Send the query to the API and process the response.
+        response = nerdgraph_client.send_query(query, variables)
+        next_cursor = self._check_next_cursor(response)
+        self._process_response(response)
 
         while next_cursor:
+            # While there is a next cursor, send the query to the API and process the response.
             query, variables = self._build_queries(next_cursor)
-            try:
-                response = nerdgraph_client.send_query(query, variables)
-            except nerdgraph_client.NerdGraphClientError as e:
-                logging.error(f"Failed to send query: {str(e)}")
-            else:
-                next_cursor = self._process_response(response)  # Process the response and get the next cursor.
-            sleep(0.5)
+            response = nerdgraph_client.send_query(query, variables)
+            next_cursor = self._check_next_cursor(response)
+            self._process_response(response)
+            sleep(0.5)  # Sleep for 0.5 seconds to avoid rate limiting.
 
         return self.entities
+
+    @staticmethod
+    def _check_next_cursor(response):
+        """
+        This private function checks the response for the next cursor. If there is a next cursor, it is returned.
+        If there is not a next cursor, None is returned.
+        :param response:
+        :return:
+        """
+
+        try:
+            next_cursor = response["data"]["actor"]["entitySearch"]["results"]["nextCursor"]
+        except KeyError:
+            logging.error("KeyError: 'nextCursor' not found in response.")
+            next_cursor = None
+
+        return next_cursor
 
     def _process_response(self, response):
         """
@@ -133,4 +144,4 @@ class ApmEntityCollector:
         except KeyError:
             logging.error("KeyError: 'name' not found in entity.")
 
-        return next_cursor
+

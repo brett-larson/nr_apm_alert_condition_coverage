@@ -1,4 +1,11 @@
+import logging
+
+
 class AlertCoverageCollector:
+    """
+    This class contains functions to get the alert coverage for APM entities in a given account.
+    """
+
     def __init__(self):
         self.entities = []  # List of dictionaries containing APM entities
 
@@ -31,29 +38,31 @@ class AlertCoverageCollector:
         This function returns a list of entities for a given account.
         :return: A list of entities.
         """
+        try:
+            for entity in entity_list:
+                query, variables = self._build_query(entity["guid"])
+                response = nerdgraph_client.send_query(query, variables)
 
-        for entity in entity_list:
-            query, variables = self._build_query(entity["guid"])
-            response = nerdgraph_client.send_query(query, variables)
+                alert = response["data"]["actor"]["entity"]["alertSeverity"]
+                if alert == "NOT_CONFIGURED":
+                    entity["alert_severity"] = "NOT CONFIGURED"
+                elif alert == "CRITICAL":
+                    entity["alert_severity"] = "CONFIGURED"
+                elif alert == "WARNING":
+                    entity["alert_severity"] = "CONFIGURED"
+                elif alert == "NOT_ALERTING":
+                    entity["alert_severity"] = "CONFIGURED"
+                else:
+                    entity["alert_severity"] = "UNKNOWN"
 
+                entity["reporting"] = response["data"]["actor"]["entity"]["reporting"]
 
-            alert = response["data"]["actor"]["entity"]["alertSeverity"]
-            if alert == "NOT_CONFIGURED":
-                entity["alert_severity"] = "NOT CONFIGURED"
-            elif alert == "CRITICAL":
-                entity["alert_severity"] = "CONFIGURED"
-            elif alert == "WARNING":
-                entity["alert_severity"] = "CONFIGURED"
-            elif alert == "NOT_ALERTING":
-                entity["alert_severity"] = "CONFIGURED"
-            else:
-                entity["alert_severity"] = "UNKNOWN"
-
-            entity["reporting"] = response["data"]["actor"]["entity"]["reporting"]
-
-            self.entities.append(entity)
-            print(self.entities)
+                self.entities.append(entity)
+        except KeyError as e:
+            logging.error(f'Error: {e}.')
+            raise
+        except Exception as e:
+            logging.error(f'Error: {e}.')
+            raise
 
         return self.entities
-        # key error
-
